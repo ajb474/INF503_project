@@ -27,7 +27,6 @@ struct pt_node{
     struct pt_node *possible_child[ALPHA_SIZE];
     bool is_leaf = false;
     vector<int> occurrences;
-
 };
 
 
@@ -52,7 +51,6 @@ struct pt_node *make_new_node(){
             node->possible_child[i] = NULL;
         }
     return node;
-
 }
 
 //insert function
