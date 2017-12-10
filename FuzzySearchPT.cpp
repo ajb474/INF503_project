@@ -8,7 +8,7 @@
 #include <iomanip>
 
 #define ALPHA 4
-#define MAX_NUMBER_ENTRIES 6
+#define MAX_NUMBER_ENTRIES 51
 
 using namespace std;
 
@@ -32,11 +32,11 @@ class PTrie
 {
 public:
     PTrieNode *root;
-    
+
     PTrie() {
         root = (PTrieNode *) calloc(1, sizeof(PTrieNode));
     }
-    
+
 //This function (int_return) handles the instances when the values of the characters need to be changed to properly index into the vector slots locations (e.g. vector slots [_][_][_][_] -> locations 0,1,2,3 ). It takes in the numerical location in the alphabet of the corresponding letter.
     int int_return(int a){
         //this accounts for if a character is A
@@ -53,7 +53,7 @@ public:
             return 3;
         return -1;
     }
-    
+
 //This function (print_return) handles the instances, as in the int_return function, where the indexed locations in the vector/node need to be reassigned letter valuations.
     int print_return(int a){
         //this accounts for if a character is A
@@ -70,18 +70,18 @@ public:
             return 19;
         return -1;
     }
-    
+
 //This function (insert) takes in the read/text, assigns it a location, and inserts it into the PT accordingly
     void insert(char text[], int index)
     {
         //Here is where we chose to use the vector template class to store our PT’s data, a vector essentially acts as a node with 4 ‘slots’ for storing the genetic reads.
         vector<char> read(text, text + strlen(text));
         cout<< read.capacity()<<"\n";
-        
+
         PTrieNode * temp = root;
-        
+
         int i = 0;
-        
+
         while (i < read.size()) {
             //This is where the node creation/read insertion begins by checking if vector locations are occupied
             if (temp->child[int_return(read[i] - 'A')] == NULL)
@@ -98,15 +98,15 @@ public:
         //This pushes the occurrence of the recently created node’s location into the count
         temp->count.push_back(index);
     }
-    
-    
+
+
     void print(PTrieNode *trie, vector<char> vector_to_print)
     {
         int i;
         bool has_no_child = true;
-        
+
         vector<int>::iterator itr = trie->count.begin();
-        
+
         for (i = 0; i < ALPHA; ++i) {
             if (trie->child[i] == NULL) {
                 continue;
@@ -117,35 +117,35 @@ public:
                 print(trie->child[i], vector_to_print);
                 //This removes the letter as it is passed over and processed
                 vector_to_print.pop_back();
-                
+
             }
         }
         //Tests whether a child has any further associations, i.e. if its size is >0
         if (trie->count.size() != 0)
         {
             vector<char>::iterator itr = vector_to_print.begin();
-            
+
             while (itr != vector_to_print.end())
             {
                 printf("%c", *itr);
                 ++itr;
             }
             printf(" -> node is located at the index number -> ");
-            
+
             vector<int>::iterator ctr = trie->count.begin();
-            
+
             while (ctr != trie->count.end())
             {
                 printf("%d, ", *ctr);
                 ++ctr;
             }
-            
+
             printf("\n");
         }
         //Again, this deals with eliminating the recently processed/printed letter
         vector_to_print.pop_back();
     }
-    
+
 //This is the essence of our Fuzzy Search alignment mechanism. It takes in what becomes a root node, pointer to the read, and a number corresponding to the maximum allowable mismatches
     vector<vector<char>> fuzzy_search(PTrieNode *trie, char *text, int mismatch)
     {
@@ -178,9 +178,9 @@ public:
             temp = sb.branch_mer;
             if(parent == temp)
                 vector_to_print.pop_back();
-            
+
             int i = index;
-            
+
             for (i; i < ALPHA; ++i)
             {
                 if (temp->child[i] == NULL)
@@ -207,7 +207,7 @@ public:
                         sb_temp.mismatch = m;
                         sb_temp.read_remain = read;
                         stack1.push(sb_temp);
-                        
+
                     } else {
                         m--;
                         if (m < 0 )
@@ -225,7 +225,7 @@ public:
                                 sb_temp.read_remain = read;
                                 stack1.push(sb_temp);
                             }
-                            
+
                             temp = temp->child[i];
                             read.erase(read.begin());
                             stack_branch sb_temp;
@@ -237,25 +237,25 @@ public:
                         }
                     }
                 }
-            break;
+                break;
             }
-            
+
             parent = temp->parent;
-            
+
             if (temp->count.size() != 0 && !temp->leaf_check)
             {
                 temp->leaf_check = true;
                 vector<char>::iterator itr = vector_to_print.begin();
-                
+
                 while (itr != vector_to_print.end())
                 {
                     printf("%c", *itr);
                     ++itr;
                 }
                 printf(" -> node is located at the index number -> ");
-                
+
                 vector<int>::iterator counter = temp->count.begin();
-                
+
                 while (counter != temp->count.end())
                 {
                     printf("%d, ", *counter);
@@ -267,14 +267,14 @@ public:
         }
         return  search_results;
     }
-    
-    
+
+
 //This is the search function, which is takes in the current PT and a character pointer and is able to search the PT for the text provided by the character pointer.
     PTrieNode * PT_search(PTrieNode *trie, char *text)
     {
         vector<char> read(text, text + strlen(text));
         PTrieNode * temp = trie;
-        
+
         while (read.size() != 0)
         {
             if (temp->child[int_return(read[0] - 'A')] != NULL)
@@ -282,34 +282,34 @@ public:
                 temp = temp->child[int_return(read[0] - 'A')];
                 read.erase(read.begin());
             } else {
-            break;
+                break;
             }
         }
-        
+
         if (read.size() == 0 && temp->count.size() != 0)
         {
-        return temp;
+            return temp;
         } else {
-        return NULL;
+            return NULL;
         }
     }
-    
+
 //DO WE NEED TO STILL INCLUDE THIS FUNCTION, I DONT THINK WE USE IT ANYWHERE...???
     void removeread(PTrieNode * trie, char * read)
     {
         PTrieNode * temp = PT_search(trie, read);
-        
+
         if (temp == NULL) {
             return;
         }
-        
+
         temp->count.pop_back();    // Deleting the occurence
-        
+
         bool has_no_child = true;
-        
+
         int childCount = 0;
         int i;
-        
+
         for (i = 0; i < ALPHA; ++i)
         {
             if (temp->child[i] != NULL)
@@ -318,14 +318,14 @@ public:
                 ++childCount;
             }
         }
-        
+
         if (!has_no_child)
         {
-        return;
+            return;
         }
-        
+
         PTrieNode * traverse;     // variable to assist in traversal
-        
+
         while (temp->count.size() == 0 && temp->parent != NULL && childCount < 2) {
             // temp->count.size() -> tells if the node is associated with another
             // read
@@ -335,19 +335,19 @@ public:
             //
             // childCount -> does the same thing as explained in the beginning, to every
             // node we reach
-            
+
             traverse = temp->parent;
-            
+
             for (i = 0; i < ALPHA; ++i) {
                 if (temp == traverse->child[i]) {
                     traverse->child[i] = NULL;
                     break;
                 }
             }
-            
+
             free(temp);
             temp = traverse;
-            
+
             for (i = 0; i < ALPHA; ++i) {
                 if (temp->child[i] != NULL) {
                     ++childCount;
@@ -357,56 +357,148 @@ public:
     }
 };
 
-char *makeRefGenome(char *RefGen, int genome_length) {
+char *makeGenome(char *genome) {
     string line;
     ifstream file;
     file.open("/Users/adambelmonte/Desktop/INF503/Project/ref_genome.txt");
     
-    while (!file.eof())
-    {
-        while (getline(file, line))
-        {
-            strcat(RefGen, line.c_str());
+    while (!file.eof()){
+        while (getline(file, line)){
+            if (line[0] != '>') {
+                strcat(genome, line.c_str());
+            }
         }
     }
     file.close();
-    return RefGen;
+    return genome;
+}
+
+char *create_RefGenFrags(string genome, int genome_length){
+    
+    int fragsize = 50;
+    int counter = 0;
+    
+    char **refGenFrags;
+    refGenFrags = new char *[genome_length];
+    for(int i = 0; i < genome_length; i++)
+    {
+        refGenFrags[i] = new char[fragsize];
+    }
+    
+    for(int i = 0; i < genome_length - fragsize; i++)
+    {
+        string temp = genome.substr(i,fragsize);
+        //cout<<"temp  "<<temp<<"\n";
+        strcpy(refGenFrags[i], temp.c_str());
+        //cout<<refGenFrags[i]<<"\n";
+        counter++;
+        //cout<<"frag number  "<<counter<<"\n";
+    }
+    return *refGenFrags;
 }
 
 int main()
 {
-    int n, i, j;
-    
-    printf("Enter the number of reads-\n");
-    scanf("%d", &n);
-    
-    char reads[n][MAX_NUMBER_ENTRIES];
-    
-    for (i = 0; i < n; ++i) {
-        scanf("%s", reads[i]);
-    }
-    
-    int genome_length = 2519;
-    char *RefGen = new char[genome_length];
-    RefGen = makeRefGenome(RefGen, genome_length);
-    string dengue_genome(RefGen, genome_length);
-    
-//Create the PT here; first by instantiating the PT object and then by populating with reads via the insert function.
+
+    //Create the PT here; first by instantiating the PT object and then by populating with reads via the insert function.
     PTrie trie;
     
-    for (i = 0; i < n; ++i) {
-        trie.insert(reads[i], i + 1);
+    //////HANDLE GENOME FIRST///////
+    ////////////////////////////////
+    //get the length of the genome
+    int genome_length = 0;
+    char c;
+    ifstream genomeFile;
+    genomeFile.open("/Users/adambelmonte/Desktop/INF503/Project/ref_genome.txt");
+    while(true)
+    {
+        if(genomeFile.peek() == -1)
+            break;
+        c = genomeFile.get();
+        if(c != '\n')
+            ++genome_length;
+    }
+    cout<<genome_length<<"\n";
+    
+    //create a large string from the reference genome file
+    char *genome_array = new char[genome_length];
+    genome_array = makeGenome(genome_array);
+    string genome(genome_array, genome_length);
+    //create individual arrays of sequence fragments 50 mers long
+    create_RefGenFrags(genome, genome_length);
+    
+    ////////////////////////////////////////////////////////////////////
+    //////HANDLE THE READS --> read from file then insert into PT///////
+    ////////////////////////////////////////////////////////////////////
+    /*
+     int n, i, j;
+     
+     printf("Enter the number of reads-\n");
+     scanf("%d", &n);
+     
+     char reads[n][MAX_NUMBER_ENTRIES];
+     
+     for (i = 0; i < n; ++i) {
+     scanf("%s", reads[i]);
+     }
+     */
+
+    string line;
+    ifstream readFile;
+    readFile.open("/Users/adambelmonte/Desktop/INF503/HW4_p2/reads.txt");
+    
+    int readFile_length = 0;
+    int counter = 0;
+    
+    while (!readFile.eof())
+    {
+        while (getline(readFile, line))
+        {
+            if (line[counter] == '>')
+            {
+                readFile_length++;
+            }
+        }
+        counter++;
     }
     
+    cout<<"read file length " <<readFile_length<<"\n";
+    //readFile.close();
+
+    
+    //ifstream readFile("/Users/adambelmonte/Desktop/INF503/HW4_p2/reads.txt");
+    int index = 0;
+    
+    while (!readFile.eof()){
+        while (getline(readFile, line)){
+            if (line[0] != '>'){
+                char read[readFile_length][MAX_NUMBER_ENTRIES];
+                strcpy(read[index], line.c_str());
+                cout<<"read number  "<<index<<"  "<<read<<"\n";
+                trie.insert(read[index], index + 1);
+                index++;
+            }
+        }
+    }
+    
+    //for (i = 0; i < n; ++i) {
+    //    trie.insert(reads[i], i + 1);
+    //}
+
     printf("\n");
-    char text[36] = "AGGGTTCAGGAAAGAGTTGCTACGTACACTGACTA";
-    int mismatch = 2;
+    //incorporate refGenFrags here somehow...
+    char text[51] = "AGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGT";
+    int mismatch = 3;
     vector<vector<char>> search_results = trie.fuzzy_search(trie.root, text, mismatch);
-    
-    
+
+
     PTrieNode *result = trie.PT_search(trie.root, text);
-    
-    
+
+
     return 0;
 }
+
+//
+// Created by sm3276 on 12/6/2017.
+//
 
