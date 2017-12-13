@@ -8,7 +8,7 @@
 #include <iomanip>
 
 #define ALPHA 4
-#define MAX_NUMBER_ENTRIES 51
+#define MAX_NUMBER_ENTRIES 101
 
 using namespace std;
 
@@ -76,7 +76,7 @@ public:
     {
         //Here is where we chose to use the vector template class to store our PT’s data, a vector essentially acts as a node with 4 ‘slots’ for storing the genetic reads.
         vector<char> read(text, text + strlen(text));
-        cout<< read.capacity()<<"\n";
+        //cout<< read.capacity()<<"\n";
 
         PTrieNode * temp = root;
 
@@ -357,11 +357,11 @@ public:
     }
 };
 
-char *makeGenome(char *genome) {
+char *makeGenome(char *genome, string filename) {
     string line;
     ifstream file;
-    file.open("/Users/adambelmonte/Desktop/INF503/Project/ref_genome.txt");
-    
+    file.open(filename);
+
     while (!file.eof()){
         while (getline(file, line)){
             if (line[0] != '>') {
@@ -372,125 +372,109 @@ char *makeGenome(char *genome) {
     file.close();
     return genome;
 }
-
-char *create_RefGenFrags(string genome, int genome_length){
-    
-    int fragsize = 50;
-    int counter = 0;
-    
-    char **refGenFrags;
-    refGenFrags = new char *[genome_length];
-    for(int i = 0; i < genome_length; i++)
-    {
-        refGenFrags[i] = new char[fragsize];
-    }
-    
-    for(int i = 0; i < genome_length - fragsize; i++)
-    {
-        string temp = genome.substr(i,fragsize);
-        //cout<<"temp  "<<temp<<"\n";
-        strcpy(refGenFrags[i], temp.c_str());
-        //cout<<refGenFrags[i]<<"\n";
-        counter++;
-        //cout<<"frag number  "<<counter<<"\n";
-    }
-    return *refGenFrags;
+int length_file(string filename){
+    ifstream file;
+    file.open (filename.c_str());
+    file.seekg (0, ios::end);
+    int  length = file.tellg();
+    file.close();
+    return  length;
 }
+ int numOfReads(string filereads){
 
+string line;
+ifstream readFile;
+readFile.open(filereads);
+
+int num_reads = 0;
+int counter = 0;
+
+while (!readFile.eof())
+{
+while (getline(readFile, line))
+{
+if (line[counter] == '>')
+{
+num_reads++;
+}
+}
+counter++;
+}
+     return num_reads;
+}
+char** create_RefGenFrags(string genome, int num_frags, int mers){
+    char **seq = new char*[num_frags];
+    int len = genome.length();
+    for(int i = 0; i < num_frags; i++) {
+        seq[i] = new char[mers];
+        string str = genome.substr(i, mers);
+        strcpy(seq[i], str.c_str());
+    }
+    return seq;
+}
 int main()
 {
-
     //Create the PT here; first by instantiating the PT object and then by populating with reads via the insert function.
     PTrie trie;
-    
-    //////HANDLE GENOME FIRST///////
     ////////////////////////////////
-    //get the length of the genome
-    int genome_length = 0;
-    char c;
-    ifstream genomeFile;
-    genomeFile.open("/Users/adambelmonte/Desktop/INF503/Project/ref_genome.txt");
-    while(true)
-    {
-        if(genomeFile.peek() == -1)
-            break;
-        c = genomeFile.get();
-        if(c != '\n')
-            ++genome_length;
-    }
-    cout<<genome_length<<"\n";
-    
+    //////HANDLE GENOME DATA////////
+    ////////////////////////////////
+    //Scan through file and get the genome_length of the genome
+    string genomeAddress = "C:\\hpc files\\Projects\\INF503FinalProject\\ref_genome.txt";
+    string filereads = "C:\\hpc files\\Projects\\INF503FinalProject\\reads.txt";
+
+    int genome_length = length_file(genomeAddress);
+    cout << "genome_length: " << genome_length <<"\n";
+
+
+
     //create a large string from the reference genome file
-    char *genome_array = new char[genome_length];
-    genome_array = makeGenome(genome_array);
+    char genome_array[genome_length];
+    makeGenome(genome_array,genomeAddress);
     string genome(genome_array, genome_length);
-    //create individual arrays of sequence fragments 50 mers long
-    create_RefGenFrags(genome, genome_length);
-    
-    ////////////////////////////////////////////////////////////////////
-    //////HANDLE THE READS --> read from file then insert into PT///////
-    ////////////////////////////////////////////////////////////////////
-    /*
-     int n, i, j;
-     
-     printf("Enter the number of reads-\n");
-     scanf("%d", &n);
-     
-     char reads[n][MAX_NUMBER_ENTRIES];
-     
-     for (i = 0; i < n; ++i) {
-     scanf("%s", reads[i]);
-     }
-     */
+//    genome = genome.substr(1,genome.length());
+//    cout << genome.length() << endl;
+    //create individual arrays of sequence fragments 100 mers long
+    int fragSize = 100;
+    int num_frags = genome_length - fragSize +1;
+    char **refGenFrags = create_RefGenFrags(genome, num_frags,fragSize);
 
+    ////////////////////////////////////////////////////////////////////
+    //////DERIVE THE READS --> read from file then insert into PT///////
+    ////////////////////////////////////////////////////////////////////
+    clock_t begin_time = clock();
     string line;
-    ifstream readFile;
-    readFile.open("/Users/adambelmonte/Desktop/INF503/HW4_p2/reads.txt");
-    
-    int readFile_length = 0;
-    int counter = 0;
-    
-    while (!readFile.eof())
-    {
-        while (getline(readFile, line))
-        {
-            if (line[counter] == '>')
-            {
-                readFile_length++;
-            }
-        }
-        counter++;
-    }
-    
-    cout<<"read file length " <<readFile_length<<"\n";
-    //readFile.close();
+    int num_reads = numOfReads(filereads);
+    cout<<"num of reads: " <<num_reads<<"\n";
 
-    
-    //ifstream readFile("/Users/adambelmonte/Desktop/INF503/HW4_p2/reads.txt");
+    ifstream readFile2(filereads);
     int index = 0;
-    
-    while (!readFile.eof()){
-        while (getline(readFile, line)){
+
+    while (!readFile2.eof()){
+        while (getline(readFile2, line)){
             if (line[0] != '>'){
-                char read[readFile_length][MAX_NUMBER_ENTRIES];
+                char read[num_reads][MAX_NUMBER_ENTRIES];
                 strcpy(read[index], line.c_str());
-                cout<<"read number  "<<index<<"  "<<read<<"\n";
+//                cout<<"read number  "<<index<<"\n";
+//                cout<<"read  "<<read[index]<<"\n";
                 trie.insert(read[index], index + 1);
                 index++;
             }
         }
     }
-    
-    //for (i = 0; i < n; ++i) {
-    //    trie.insert(reads[i], i + 1);
-    //}
-
+    readFile2.close();
+    cout << "\nElapsed time to build the trie with " << num_reads << " reads is " << float(clock() - begin_time) / CLOCKS_PER_SEC << "s";
     printf("\n");
-    //incorporate refGenFrags here somehow...
-    char text[51] = "AGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGTAGGGT";
-    int mismatch = 3;
-    vector<vector<char>> search_results = trie.fuzzy_search(trie.root, text, mismatch);
 
+    //incorporate refGenFrags here somehow...
+    char text[51] = "CACACGTGGCGCTGTTCTAATGCATAAAGGAAAGAGGATTGAACCATCAA";
+    ///FIX TO WORK ON ENTIRE GENOME OF FRAGMENTS
+
+    int mismatch = 3;
+    cout << "Looking for \"" << text << "\"" <<endl;
+    for (int i = 0; i < num_frags; i++){
+        vector<vector<char>> search_results = trie.fuzzy_search(trie.root, refGenFrags[i], mismatch);
+    }
 
     PTrieNode *result = trie.PT_search(trie.root, text);
 
