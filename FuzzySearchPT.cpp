@@ -246,22 +246,22 @@ public:
             {
                 temp->leaf_check = true;
                 vector<char>::iterator itr = vector_to_print.begin();
-
+                // uncomment to print out
                 while (itr != vector_to_print.end())
                 {
-                    printf("%c", *itr);
+                 //   printf("%c", *itr);
                     ++itr;
                 }
-                printf(" -> node is located at the index number -> ");
+               // printf(" -> node is located at the index number -> ");
 
                 vector<int>::iterator counter = temp->count.begin();
 
                 while (counter != temp->count.end())
                 {
-                    printf("%d, ", *counter);
+                  //  printf("%d, ", *counter);
                     ++counter;
                 }
-                printf("\n");
+              //  printf("\n");
                 search_results.push_back(vector_to_print);
             }
         }
@@ -361,7 +361,10 @@ char *makeGenome(char *genome, string filename) {
     string line;
     ifstream file;
     file.open(filename);
-
+    if (!file) {
+        cerr << "Unable to open file " << filename  << endl;
+        exit(1);
+    }
     while (!file.eof()){
         while (getline(file, line)){
             if (line[0] != '>') {
@@ -373,8 +376,12 @@ char *makeGenome(char *genome, string filename) {
     return genome;
 }
 int length_file(string filename){
-    ifstream file;
+   ifstream file;
     file.open (filename.c_str());
+    if (!file) {
+        cerr << "Unable to open file " << filename << endl;
+        exit(1);
+    }
     file.seekg (0, ios::end);
     int  length = file.tellg();
     file.close();
@@ -385,7 +392,10 @@ int length_file(string filename){
 string line;
 ifstream readFile;
 readFile.open(filereads);
-
+     if (!readFile) {
+         cerr << "Unable to open file " << filereads;
+         exit(1);
+     }
 int num_reads = 0;
 int counter = 0;
 
@@ -412,16 +422,45 @@ char** create_RefGenFrags(string genome, int num_frags, int mers){
     }
     return seq;
 }
+
+void destroy(PTrieNode *trie)
+{
+    if (trie != NULL)	{
+        destroy(trie->child[0]);
+        trie->child[0] = NULL;
+        destroy(trie->child[1]);
+        trie->child[0] = NULL;
+        destroy(trie->child[2]);
+        trie->child[0] = NULL;
+        destroy(trie->child[3]);
+        trie->child[0] = NULL;
+        delete trie;
+    }
+}
+char retrunALPHA(int index){
+    switch(index) {
+        case 0 :
+            return 'A';
+        case 1 :
+            return 'C';
+        case 2 :
+            return 'G';
+        case 3 :
+            return 'T';
+        default:
+            return 'N';
+    }
+}
 int main()
 {
     //Create the PT here; first by instantiating the PT object and then by populating with reads via the insert function.
-    PTrie trie;
-    ////////////////////////////////
     //////HANDLE GENOME DATA////////
     ////////////////////////////////
     //Scan through file and get the genome_length of the genome
-    string genomeAddress = "C:\\hpc files\\Projects\\INF503FinalProject\\ref_genome.txt";
-    string filereads = "C:\\hpc files\\Projects\\INF503FinalProject\\reads.txt";
+  // string genomeAddress = "C:\\hpc files\\Projects\\INF503FinalProject\\ref_genome.txt";
+  string genomeAddress = "//common//contrib//classroom//inf503//project_2//test_genome.fasta";
+   string filereads = "//common//contrib//classroom//inf503//project_2//test_reads.fasta";
+  //  string filereads = "C:\\hpc files\\Projects\\INF503FinalProject\\reads100.txt";
 
     int genome_length = length_file(genomeAddress);
     cout << "genome_length: " << genome_length <<"\n";
@@ -434,7 +473,7 @@ int main()
     string genome(genome_array, genome_length);
 //    genome = genome.substr(1,genome.length());
 //    cout << genome.length() << endl;
-    //create individual arrays of sequence fragments 100 mers long
+    //create individual arrays of sequence fragments 50 mers long
     int fragSize = 100;
     int num_frags = genome_length - fragSize +1;
     char **refGenFrags = create_RefGenFrags(genome, num_frags,fragSize);
@@ -442,41 +481,84 @@ int main()
     ////////////////////////////////////////////////////////////////////
     //////DERIVE THE READS --> read from file then insert into PT///////
     ////////////////////////////////////////////////////////////////////
-    clock_t begin_time = clock();
+
     string line;
-    int num_reads = numOfReads(filereads);
-    cout<<"num of reads: " <<num_reads<<"\n";
+//    int num_reads = numOfReads(filereads);
+//    cout<<"num of reads: " <<num_reads<<"\n";
 
     ifstream readFile2(filereads);
+    if (!readFile2) {
+        cerr << "Unable to open file " << filereads;
+        exit(1);
+    }
     int index = 0;
+    int num_reads[] = {100, 200, 500, 1000, 2000, 5000, 10000, 15000, 50000, 100000, 150000,200000, 500000,1000000,1500000,2000000};
 
-    while (!readFile2.eof()){
-        while (getline(readFile2, line)){
+    char read[MAX_NUMBER_ENTRIES];
+
+    for (int ij = 0; ij < 16;ij++)
+    {
+    PTrie trie;
+    clock_t begin_time = clock();
+    if (!readFile2.eof()){
+        while (getline(readFile2, line) and index < num_reads[ij]){
             if (line[0] != '>'){
-                char read[num_reads][MAX_NUMBER_ENTRIES];
-                strcpy(read[index], line.c_str());
-//                cout<<"read number  "<<index<<"\n";
-//                cout<<"read  "<<read[index]<<"\n";
-                trie.insert(read[index], index + 1);
+                strcpy(read, line.c_str());
+                trie.insert(read, index + 1);
                 index++;
             }
         }
     }
+       cout << "\nElapsed time to build the trie with " << num_reads[ij] << " reads is " << float(clock() - begin_time) / CLOCKS_PER_SEC << "s";
+       // destroy the trie
+       //cout << "destroy the trie";
+       destroy(trie.root);
+       // go to the beginning of the file
+        readFile2.clear();
+        readFile2.seekg (0, ios::beg);
+        index = 0;
+    }
     readFile2.close();
-    cout << "\nElapsed time to build the trie with " << num_reads << " reads is " << float(clock() - begin_time) / CLOCKS_PER_SEC << "s";
+
     printf("\n");
 
     //incorporate refGenFrags here somehow...
-    char text[51] = "CACACGTGGCGCTGTTCTAATGCATAAAGGAAAGAGGATTGAACCATCAA";
+    //char text[101] = "AGGGTTCAGGAAAGAGTTTGGAAGGATGCTGAACATCTTGAATAGGAGACAGGGTTCAGGAAAGAGTTTGGAAGGATGCTGAACATCTTGAATAGGAGAC";
     ///FIX TO WORK ON ENTIRE GENOME OF FRAGMENTS
 
-    int mismatch = 3;
-    cout << "Looking for \"" << text << "\"" <<endl;
+
+    //cout << "Looking for \"" << text << "\"" <<endl;
+
+    // build tire from trie
+    PTrie trie;
+    clock_t begin_time = clock();
     for (int i = 0; i < num_frags; i++){
-        vector<vector<char>> search_results = trie.fuzzy_search(trie.root, refGenFrags[i], mismatch);
+        trie.insert(refGenFrags[i], i + 1);
     }
 
-    PTrieNode *result = trie.PT_search(trie.root, text);
+    cout << "\nElapsed time to build the trie with " << num_frags << " reads from the reference genome is " << float(clock() - begin_time) / CLOCKS_PER_SEC << "s" << endl;
+
+
+    // do some changes to the reference genome and do fuzzy search
+    int count = 0;
+    int mismatch = 1;
+
+    for (int i = 0; i < num_frags; i++) {
+        int m = mismatch;
+        while (m > 0) {
+            int randNum = rand() % fragSize;
+            int alpha_index = rand() % ALPHA;
+            refGenFrags[i][randNum] = retrunALPHA(alpha_index);
+            m--;
+        }
+        vector<vector<char>> search_results = trie.fuzzy_search(trie.root, refGenFrags[i], mismatch);
+        if (search_results.size()!=0)
+           count++;
+    }
+
+    cout << "Sensitivity is: " << (count/double(num_frags))* 100 <<"%";
+
+//    PTrieNode *result = trie.PT_search(trie.root, text);
 
 
     return 0;
